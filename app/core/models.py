@@ -2,13 +2,17 @@ import os
 import uuid
 
 from django.db import models
-from django.contrib.auth.models import (AbstractBaseUser,
-                                        BaseUserManager,
-                                        PermissionsMixin)
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin
+)
 
-from .utils import (image_size_validator,
-                    is_image_gif_ext,
-                    image_dimensions_validator)
+from .utils import (
+    image_size_validator,
+    is_image_gif_ext,
+    image_dimensions_validator
+)
 
 
 def user_image_file_path(instance, filename):
