@@ -1,3 +1,35 @@
-from django.contrib import admin # noqa
+from django.contrib import admin
+from django.utils.translation import gettext as _
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-# Register your models here.
+from .models import User
+
+from pyheif_pillow_opener import register_heif_opener
+
+# Register image heif extension.
+register_heif_opener()
+
+
+class UserAdmin(BaseUserAdmin):
+    ordering = ('id',)
+    list_display = ('email',)
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        (_('Personal Info'), {'fields': ('name', 'image')}),
+        (
+            _('Permissions'),
+            {'fields': ('is_active', 'is_staff', 'is_superuser')}
+        ),
+        (_('Important dates'), {'fields': ('last_login',)}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'name', 'password1', 'password2')
+        }),
+    )
+    search_fields = ('email',)
+    search_help_text = 'Search by email'
+
+
+admin.site.register(User, UserAdmin)

@@ -16,6 +16,9 @@ RUN python -m venv /py && \
         python3-dev \
         libpq-dev \
         postgresql-client \
+        libjpeg-dev \
+        libheif-dev \
+        libde265-dev \
         libffi-dev \
         musl-dev &&\
     /py/bin/pip install --no-compile -r /tmp/requirements.txt && \
@@ -23,7 +26,11 @@ RUN python -m venv /py && \
     adduser \
         --disabled-password \
         --no-create-home \
-        app-user
+        app-user && \
+    mkdir -p /vol/web/media && \
+    mkdir -p /vol/web/static && \
+    chown -R app-user:app-user /vol && \
+    chmod -R 755 /vol
 
 ENV PATH="/py/bin:$PATH"
 
