@@ -20,6 +20,9 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - CACHE_LOCATION=${CACHE_LOCATION}
     depends_on:
       - db
   
@@ -33,6 +36,39 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
 
+  redis:
+    image: redis:7.0.4-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - dev-redis-data:/var/lib/redis/data
+    depends_on:
+      - db
+
+  celery:
+    build:
+      context: .
+    command: >
+      sh -c "celery -A app worker --loglevel=info"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DEBUG=${DEBUG}
+      - SECRET_KEY=${SECRET_KEY}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - CACHE_LOCATION=${CACHE_LOCATION}
+    volumes:
+       - ./app:/app
+    depends_on:
+      - redis
+      - app
+
 volumes:
   dev-db-data:
   dev-static-data:
+  dev-redis-data:
