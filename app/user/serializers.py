@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model, password_validation
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator as token_generator # noqa
 
 from .validators import SymbolValidator
 
@@ -14,6 +16,7 @@ from core.utils import (
     image_size_validator,
     image_dimensions_validator,
     is_image_gif_ext,
+    EmailSender
 )
 
 
@@ -23,9 +26,13 @@ class UserSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = ['email', 'name', 'password', 'is_active']
         extra_kwargs = {
-            'password': {'write_only': True, 'min_length': 8},
+            'password': {
+                'write_only': True,
+                'min_length': 8,
+                'style': {'input_type': 'password'}
+            },
             'name': {'min_length': 5},
-            'is_active': {'read_only': True}
+            'is_active': {'read_only': True},
         }
 
     def validate_name(self, value):
@@ -81,7 +88,8 @@ class UserImageSerializer(serializers.ModelSerializer):
 
 class UserPasswordChangeSerializer(UserDetailSerializer):
     new_password = serializers.CharField(
-        write_only=True, min_length=8, required=True)
+        write_only=True, min_length=8,
+        required=True, style={'input_type': 'password'})
 
     class Meta(UserDetailSerializer.Meta):
         """Set up read_only_fields."""
@@ -113,3 +121,70 @@ class UserPasswordChangeSerializer(UserDetailSerializer):
         instance.set_password(validated_data['new_password'])
         instance.save()
         return instance
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True, write_only=True)
+
+    def validate_email(self, value):
+        """Check that user exists."""
+        try:
+            user = get_user_model().objects.get(email=value)
+            return user
+        except get_user_model().DoesNotExist:
+            msg = _('No user exists with this email.')
+            raise serializers.ValidationError(msg)
+
+    def save(self):
+        """Send an email."""
+        user = self.validated_data['email']
+        sender = EmailSender(user)
+        message = sender.make_message()
+        sender.send_email('Reset password', message)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True, write_only=True)
+    user_id = serializers.CharField(required=True, write_only=True)
+    new_password = serializers.CharField(
+        min_length=8, required=True,
+        write_only=True, style={'input_type': 'password'})
+
+    def validate_user_id(self, value):
+        """Check that user exists."""
+        decoded_user_id = urlsafe_base64_decode(value).decode()
+        try:
+            user = get_user_model().objects.get(pk=decoded_user_id)
+            return user
+        except get_user_model().DoesNotExist:
+            msg = _('User does not exist.')
+            raise serializers.ValidationError(msg)
+
+    def validate_new_password(self, value):
+        try:
+            password_validation.validate_password(password=value)
+            return value
+        except ValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+
+    def validate(self, data):
+        user = data.get('user_id')
+        token = data.get('token')
+        # Check that the token is active.
+        if not token_generator.check_token(user, token):
+            msg = _('Token has expired.')
+            raise serializers.ValidationError({'token': msg})
+        # Check that the new password is not simmilar to the old one.
+        new_password = data.get('new_password')
+        if user.check_password(new_password):
+            msg = _('The new password is similar to the old one.')
+            raise serializers.ValidationError({'new_password': msg})
+
+        return data
+
+    def save(self):
+        """Changing the user's password."""
+        user = self.validated_data['user_id']
+        new_password = self.validated_data['new_password']
+        user.set_password(new_password)
+        user.save()

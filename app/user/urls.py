@@ -15,4 +15,10 @@ urlpatterns = [
     path('change-password/',
          api_views.UserPasswordChangeAPIView.as_view(),
          name='change-user-password'),
+    path('reset-password/',
+         api_views.PasswordResetRequestAPIView.as_view(),
+         name='reset-password'),
+    path('reset-password-confirm/',
+         api_views.PasswordResetConfirmAPIView.as_view(),
+         name='reset-password-confirm'),
 ]

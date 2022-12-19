@@ -6,6 +6,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sites.models import Site
 from django.utils.encoding import smart_bytes
 from django.utils.http import urlsafe_base64_encode
+from django.urls import reverse
 
 from .tasks import send_email
 
@@ -40,21 +41,25 @@ class EmailSender:
         self.user = user
         self.domain = Site.objects.get_current()
 
-    def make_url(self, activation: bool = False) -> str:
-        """Create activation/reset-password link."""
-        encoded_user_id = urlsafe_base64_encode(smart_bytes(self.user.pk)) # noqa
-
+    def make_message(self, activation: bool = False) -> str:
+        """Create an email message."""
+        encoded_user_id = urlsafe_base64_encode(smart_bytes(self.user.pk))
         if activation:
-            # Create activation link.
-            activation_uuid = self.user.activation.hex
-            encoded_activation_uuid = urlsafe_base64_encode( # noqa
-                smart_bytes(activation_uuid))
-            url = 'some url'
+            # Create a reset-password message.
+            pass
         else:
-            token = default_token_generator.make_token(self.user) # noqa
-            url = 'some url'
-
-        return url
+            # Create a reset-password message.
+            relative_url = reverse('user:reset-password-confirm')
+            url = 'http://{0}:8000{1}'.format(self.domain, relative_url)
+            token = default_token_generator.make_token(self.user)
+            message = f"""Hey there!\n
+            Here are your essential data to set new password.
+            user_id: {encoded_user_id}
+            token: {token}
+            link: {url}\n
+            Hurry up! Token is active for an hour.
+            """
+        return message
 
     def send_email(self, title: str, message: str):
         return send_email.delay(title, message, self.user.email)

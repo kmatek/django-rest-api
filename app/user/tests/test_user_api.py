@@ -6,6 +6,11 @@ from PIL import Image
 
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.test import override_settings
+from django.core import mail
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import smart_bytes
+from django.utils.http import urlsafe_base64_encode
 
 from core.tests.test_models import sample_user
 
@@ -17,10 +22,18 @@ CREATE_USER_URL = reverse('user:create-user')
 DETAIL_USER_URL = reverse('user:detail-user')
 UPLOAD_USER_IMAGE_URL = reverse('user:upload-image-user')
 CHANGE_PASSWORD_URL = reverse('user:change-user-password')
+RESET_PASSWORD_URL = reverse('user:reset-password')
+RESET_PASSWORD_CONFIRM_URL = reverse('user:reset-password-confirm')
 
 
+@override_settings(
+    CACHES={
+        'default': {
+            'BACKEND': 'django.core.cache.backends.dummy.DummyCache'
+        }
+    },
+)
 class PublicUserAPITests(APITestCase):
-
     def test_create_user_with_valid_credentials(self):
         payload = {
             'email': 'test@email.com',
@@ -225,6 +238,145 @@ class PublicUserAPITests(APITestCase):
         res = self.client.patch(CHANGE_PASSWORD_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    @override_settings(
+        EMAIL_BACKEND='anymail.backends.test.EmailBackend',
+        CELERY_TASK_ALWAYS_EAGER=True,
+        CELERY_TASK_EAGER_PROPAGATES=True
+    )
+    def test_reset_password_with_valid_credentials(self):
+        payload = {
+            'email': 'test@email.com',
+            'name': 'testname',
+            'password': 'Testpassword!'
+        }
+
+        sample_user(**payload)
+
+        res = self.client.post(RESET_PASSWORD_URL, {'email': payload['email']})
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [(payload['email'])])
+
+    def test_reset_password_with_invalid_credentials(self):
+        payload = {'email': 'test@email.com'}
+
+        res = self.client.post(RESET_PASSWORD_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_reset_password_not_allowed_methods(self):
+        payload = {'email': ''}
+
+        res = self.client.get(RESET_PASSWORD_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        res = self.client.put(RESET_PASSWORD_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        res = self.client.patch(RESET_PASSWORD_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        res = self.client.delete(RESET_PASSWORD_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_reset_password_confirm_with_valid_credenatials(self):
+        user = sample_user(
+            email='test@email.com', name='testname',
+            password='TestPassword1!@#')
+
+        # Check old user password.
+        self.assertTrue(user.check_password('TestPassword1!@#'))
+
+        encoded_user_id = urlsafe_base64_encode(smart_bytes(user.id))
+        token = default_token_generator.make_token(user)
+        payload = {
+            'user_id': encoded_user_id,
+            'token': token,
+            'new_password': 'Testpassword123@'
+        }
+
+        res = self.client.post(RESET_PASSWORD_CONFIRM_URL, payload)
+        user.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertFalse(user.check_password('TestPassword1!@#'))
+        self.assertTrue(user.check_password('Testpassword123@'))
+        self.assertNotIn('new_password', res.data)
+        self.assertNotIn('user_id', res.data)
+        self.assertNotIn('token', res.data)
+
+    def test_reset_password_confirm_with_expired_token(self):
+        user = sample_user(
+            email='test@email.com', name='testname',
+            password='TestPassword1!@#')
+        encoded_user_id = urlsafe_base64_encode(smart_bytes(user.id))
+        token = default_token_generator.make_token(user)
+        # Change user password to make token expired.
+        user.set_password('TestPassword123!@#')
+        user.save()
+        payload = {
+            'user_id': encoded_user_id,
+            'token': token,
+            'new_password': 'Testpassword123@'
+        }
+        res = self.client.post(RESET_PASSWORD_CONFIRM_URL, payload)
+        user.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        # Check old user password.
+        self.assertTrue(user.check_password('TestPassword123!@#'))
+        self.assertFalse(user.check_password('TestPassword123@'))
+        self.assertNotIn('new_password', res.data)
+        self.assertNotIn('user_id', res.data)
+        self.assertIn('token', res.data)
+        self.assertEqual(res.data['token'][0].code, 'invalid')
+
+    def test_reset_password_confirm_with_wrong_same_password(self):
+        user = sample_user(
+            email='test@email.com', name='testname',
+            password='TestPassword1!@#')
+        encoded_user_id = urlsafe_base64_encode(smart_bytes(user.id))
+        token = default_token_generator.make_token(user)
+        payload = {
+            'user_id': encoded_user_id,
+            'token': token,
+            'new_password': 'TestPassword1!@#'
+        }
+        res = self.client.post(RESET_PASSWORD_CONFIRM_URL, payload)
+        user.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotIn('user_id', res.data)
+        self.assertNotIn('token', res.data)
+        self.assertIn('new_password', res.data)
+        self.assertEqual(
+            res.data['new_password'][0],
+            'The new password is similar to the old one.')
+
+    def test_reset_password_confirm_with_invalid_password(self):
+        user = sample_user(
+            email='test@email.com', name='testname',
+            password='TestPassword1!@#')
+        encoded_user_id = urlsafe_base64_encode(smart_bytes(user.id))
+        token = default_token_generator.make_token(user)
+        payload = {
+            'user_id': encoded_user_id,
+            'token': token,
+            'new_password': '1234567'
+        }
+        res = self.client.post(RESET_PASSWORD_CONFIRM_URL, payload)
+        user.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        # Check old user password.
+        self.assertTrue(user.check_password('TestPassword1!@#'))
+        self.assertFalse(user.check_password('1234567'))
+        self.assertNotIn('user_id', res.data)
+        self.assertNotIn('token', res.data)
+        self.assertIn('new_password', res.data)
+        self.assertEqual(res.data['new_password'][0].code, "min_length")
 
 
 class AuthenticatedUserAPITests(APITestCase):
@@ -438,3 +590,39 @@ class UserImageUploadTests(APITestCase):
         self.user.refresh_from_db()
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(self.user.image)
+
+
+TESTING_THRESHOLD = '5/min'
+
+
+@override_settings(
+    EMAIL_BACKEND='anymail.backends.test.EmailBackend',
+    CELERY_TASK_ALWAYS_EAGER=True,
+    CELERY_TASK_EAGER_PROPAGATES=True,
+    THROTTLE_THRESHOLD=TESTING_THRESHOLD,
+    CACHES={
+        'default': {
+            'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+            'LOCATION': '/var/tmp/django_cache',
+        }
+    },
+)
+class TestThrottling(APITestCase):
+    def tearDown(self):
+        path = '/var/tmp/django_cache'
+        if os.path.exists(path):
+            shutil.rmtree(path)
+
+    def test_password_reset_throttling(self):
+        payload = {
+            'email': 'test@email.com',
+            'name': 'testname',
+            'password': 'Testpassword!'
+        }
+        sample_user(**payload)
+        for i in range(0, 5):
+            self.client.post(RESET_PASSWORD_URL, payload)
+        response = self.client.post(RESET_PASSWORD_URL, payload)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_429_TOO_MANY_REQUESTS)

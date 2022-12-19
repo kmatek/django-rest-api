@@ -29,6 +29,8 @@ DEBUG = bool(int(os.environ.get('DEBUG', '0')))
 
 ALLOWED_HOSTS = []
 
+PASSWORD_RESET_TIMEOUT = 3600
+
 SITE_ID = 1
 
 AUTH_USER_MODEL = 'core.User'
@@ -58,7 +60,10 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-    )
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '1/day',
+    },
 }
 
 # Simple_jwt settings
