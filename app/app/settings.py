@@ -29,6 +29,8 @@ DEBUG = bool(int(os.environ.get('DEBUG', '0')))
 
 ALLOWED_HOSTS = []
 
+SITE_ID = 1
+
 AUTH_USER_MODEL = 'core.User'
 
 # Application definition
@@ -40,8 +42,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'rest_framework',
     'rest_framework_simplejwt',
+    'anymail',
     'core',
     'user',
 ]
@@ -148,6 +152,15 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'user.validators.SymbolValidator', 
     },
 ]
+
+# Email settings
+
+ANYMAIL = {
+    "SENDINBLUE_API_KEY": os.environ.get('EMAIL_KEY')
+}
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND')
+DEFAULT_FROM_EMAIL = os.environ.get('EMAIL')
+SERVER_EMAIL = os.environ.get('EMAIL')
 
 
 # Internationalization

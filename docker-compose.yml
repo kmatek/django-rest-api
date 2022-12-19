@@ -23,6 +23,9 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       - CACHE_LOCATION=${CACHE_LOCATION}
+      - EMAIL_KEY=${EMAIL_KEY}
+      - EMAIL_BACKEND=${EMAIL_BACKEND}
+      - EMAIL=${EMAIL}
     depends_on:
       - db
   
@@ -62,6 +65,9 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       - CACHE_LOCATION=${CACHE_LOCATION}
+      - EMAIL_KEY=${EMAIL_KEY}
+      - EMAIL_BACKEND=${EMAIL_BACKEND}
+      - EMAIL=${EMAIL}
     volumes:
        - ./app:/app
     depends_on:

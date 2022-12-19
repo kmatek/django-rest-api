@@ -7,3 +7,4 @@ pyheif-pillow-opener>=0.1.0, <0.1.1
 djangorestframework-simplejwt>=5.2.2, <5.2.3
 redis>=4.4.0, <4.4.1
 celery>=5.2.7, <5.3
+django-anymail[sendinblue]>=8.6, <8.7
