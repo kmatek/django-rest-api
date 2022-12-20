@@ -152,12 +152,15 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
     def validate_user_id(self, value):
         """Check that user exists."""
-        decoded_user_id = urlsafe_base64_decode(value).decode()
         try:
+            decoded_user_id = urlsafe_base64_decode(value).decode()
             user = get_user_model().objects.get(pk=decoded_user_id)
             return user
         except get_user_model().DoesNotExist:
             msg = _('User does not exist.')
+            raise serializers.ValidationError(msg)
+        except UnicodeDecodeError:
+            msg = _('Wrong user_id.')
             raise serializers.ValidationError(msg)
 
     def validate_new_password(self, value):
@@ -187,4 +190,47 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         user = self.validated_data['user_id']
         new_password = self.validated_data['new_password']
         user.set_password(new_password)
+        user.save()
+
+
+class ActivateUserSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True, write_only=True)
+    user_id = serializers.CharField(required=True, write_only=True)
+
+    def validate_user_id(self, value):
+        """Check that user exists."""
+        try:
+            decoded_user_id = urlsafe_base64_decode(value).decode()
+            user = get_user_model().objects.get(pk=decoded_user_id)
+            if user.is_active:
+                msg = _('User is already active.')
+                raise serializers.ValidationError(msg)
+            return user
+        except get_user_model().DoesNotExist:
+            msg = _('User does not exist.')
+            raise serializers.ValidationError(msg)
+        except UnicodeDecodeError:
+            msg = _('Wrong user_id.')
+            raise serializers.ValidationError(msg)
+
+    def validate_token(self, value):
+        """Check that user is already active."""
+        try:
+            decoded_uuid = urlsafe_base64_decode(value).decode()
+            user = get_user_model().objects.get(activation_uuid=decoded_uuid)
+            if user.activation_uuid.hex == decoded_uuid:
+                msg = _('Invalid activation token.')
+                raise serializers.ValidationError(msg)
+            return decoded_uuid
+        except get_user_model().DoesNotExist:
+            msg = _('User does not exist.')
+            raise serializers.ValidationError(msg)
+        except UnicodeDecodeError:
+            msg = _('Wrong token.')
+            raise serializers.ValidationError(msg)
+
+    def save(self):
+        """Activate new user."""
+        user = self.validated_data['user_id']
+        user.is_active = True
         user.save()

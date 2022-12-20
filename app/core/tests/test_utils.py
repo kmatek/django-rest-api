@@ -8,6 +8,7 @@ from .test_models import sample_user
 
 
 @override_settings(
+    SUSPEND_SIGNALS=True,
     EMAIL_BACKEND='anymail.backends.test.EmailBackend',
     CELERY_TASK_ALWAYS_EAGER=True,
     CELERY_TASK_EAGER_PROPAGATES=True

@@ -5,7 +5,7 @@ import tempfile
 
 from PIL import Image
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -21,6 +21,7 @@ def sample_superuser(**params):
     return get_user_model().objects.create_superuser(**params)
 
 
+@override_settings(SUSPEND_SIGNALS=True)
 class ModelTests(TestCase):
 
     def tearDown(self):

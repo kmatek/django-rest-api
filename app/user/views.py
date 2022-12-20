@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, status, views
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.exceptions import Throttled
@@ -12,12 +12,18 @@ from .serializers import (
     UserPasswordChangeSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
+    ActivateUserSerializer
 )
 
 
 class CreateUserAPIView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        self.create(request, *args, **kwargs)
+        msg = _('Please check your mailbox to activate your account.')
+        return Response({'detail': msg}, status=status.HTTP_201_CREATED)
 
 
 class UserDetailAPIView(generics.RetrieveAPIView):
@@ -73,4 +79,16 @@ class PasswordResetConfirmAPIView(generics.GenericAPIView):
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             msg = _('Password changed successfuly.')
+            return Response({'detail': msg}, status=status.HTTP_200_OK)
+
+
+class ActivateUserAPIView(views.APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request, uidb64, token):
+        serializer = ActivateUserSerializer(
+            data={'token': token, 'user_id': uidb64})
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            msg = _('User activated.')
             return Response({'detail': msg}, status=status.HTTP_200_OK)

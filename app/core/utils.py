@@ -45,12 +45,20 @@ class EmailSender:
         """Create an email message."""
         encoded_user_id = urlsafe_base64_encode(smart_bytes(self.user.pk))
         if activation:
-            # Create a reset-password message.
-            pass
+            # Create an activation message.
+            token = urlsafe_base64_encode(
+                smart_bytes(self.user.activation_uuid))
+            relative_url = reverse(
+                'user:activate-user', args=[encoded_user_id, token])
+            url = f'http://{self.domain}:8000{relative_url}'
+            message = f"""Hey there!\n
+            Here is your actovation link.
+            link: {url}
+            """
         else:
             # Create a reset-password message.
             relative_url = reverse('user:reset-password-confirm')
-            url = 'http://{0}:8000{1}'.format(self.domain, relative_url)
+            url = f'http://{self.domain}:8000{relative_url}'
             token = default_token_generator.make_token(self.user)
             message = f"""Hey there!\n
             Here are your essential data to set new password.

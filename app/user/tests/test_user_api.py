@@ -26,7 +26,12 @@ RESET_PASSWORD_URL = reverse('user:reset-password')
 RESET_PASSWORD_CONFIRM_URL = reverse('user:reset-password-confirm')
 
 
+def get_active_url(uidb64, token):
+    return reverse('user:activate-user', args=[uidb64, token])
+
+
 @override_settings(
+    SUSPEND_SIGNALS=True,
     CACHES={
         'default': {
             'BACKEND': 'django.core.cache.backends.dummy.DummyCache'
@@ -45,7 +50,7 @@ class PublicUserAPITests(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
-        user = get_user_model().objects.get(**res.data)
+        user = get_user_model().objects.get(email=payload['email'])
         self.assertTrue(user.check_password(payload['password']))
         self.assertNotIn('password', res.data)
         self.assertNotIn('activation_uuid', res.data)
@@ -378,7 +383,106 @@ class PublicUserAPITests(APITestCase):
         self.assertIn('new_password', res.data)
         self.assertEqual(res.data['new_password'][0].code, "min_length")
 
+    def test_reset_password_confirm_allowed_methods(self):
+        user = sample_user(
+            email='test@email.com', name='testname',
+            password='TestPassword1!@#')
 
+        # Check old user password.
+        self.assertTrue(user.check_password('TestPassword1!@#'))
+
+        encoded_user_id = urlsafe_base64_encode(smart_bytes(user.id))
+        token = default_token_generator.make_token(user)
+        payload = {
+            'user_id': encoded_user_id,
+            'token': token,
+            'new_password': 'Testpassword123@'
+        }
+
+        res = self.client.get(RESET_PASSWORD_CONFIRM_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        res = self.client.put(RESET_PASSWORD_CONFIRM_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        res = self.client.patch(RESET_PASSWORD_CONFIRM_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        res = self.client.delete(RESET_PASSWORD_CONFIRM_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_user_activation_with_valid_credentials(self):
+        user = sample_user(
+            email='test@email.com', name='testname',
+            password='TestPassword1!@#')
+        self.assertFalse(user.is_active)
+        encoded_user_id = urlsafe_base64_encode(smart_bytes(user.id))
+        encoded_activation_uuid = urlsafe_base64_encode(
+            smart_bytes(user.activation_uuid))
+        url = get_active_url(encoded_user_id, encoded_activation_uuid)
+        res = self.client.get(url)
+        user.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(user.is_active)
+
+    def test_user_activation_with_invalid_credentials(self):
+        user = sample_user(
+            email='test@email.com', name='testname',
+            password='TestPassword1!@#')
+        self.assertFalse(user.is_active)
+        encoded_user_id = 'invalid'
+        encoded_activation_uuid = 'invalid'
+        url = get_active_url(encoded_user_id, encoded_activation_uuid)
+        res = self.client.get(url)
+        user.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(user.is_active)
+
+    def test_user_activation_already_activated(self):
+        user = sample_user(
+            email='test@email.com', name='testname',
+            password='TestPassword1!@#', is_active=True)
+        self.assertTrue(user.is_active)
+        encoded_user_id = urlsafe_base64_encode(smart_bytes(user.id))
+        encoded_activation_uuid = urlsafe_base64_encode(
+            smart_bytes(user.activation_uuid.hex))
+        url = get_active_url(encoded_user_id, encoded_activation_uuid)
+        res = self.client.get(url)
+        user.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(user.is_active)
+
+    def test_user_activation_allowed_methods(self):
+        user = sample_user(
+            email='test@email.com', name='testname',
+            password='TestPassword1!@#')
+        self.assertFalse(user.is_active)
+        encoded_user_id = urlsafe_base64_encode(smart_bytes(user.id))
+        encoded_activation_uuid = urlsafe_base64_encode(
+            smart_bytes(user.activation_uuid.hex))
+        url = get_active_url(encoded_user_id, encoded_activation_uuid)
+
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertFalse(user.is_active)
+
+        res = self.client.put(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertFalse(user.is_active)
+
+        res = self.client.patch(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertFalse(user.is_active)
+
+        res = self.client.delete(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertFalse(user.is_active)
+
+
+@override_settings(SUSPEND_SIGNALS=True)
 class AuthenticatedUserAPITests(APITestCase):
 
     def setUp(self):
@@ -529,6 +633,7 @@ class AuthenticatedUserAPITests(APITestCase):
             "This password is entirely numeric.",)
 
 
+@override_settings(SUSPEND_SIGNALS=True)
 class UserImageUploadTests(APITestCase):
 
     def setUp(self):
@@ -596,6 +701,7 @@ TESTING_THRESHOLD = '5/min'
 
 
 @override_settings(
+    SUSPEND_SIGNALS=True,
     EMAIL_BACKEND='anymail.backends.test.EmailBackend',
     CELERY_TASK_ALWAYS_EAGER=True,
     CELERY_TASK_EAGER_PROPAGATES=True,

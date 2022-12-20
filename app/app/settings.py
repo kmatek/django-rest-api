@@ -33,6 +33,8 @@ PASSWORD_RESET_TIMEOUT = 3600
 
 SITE_ID = 1
 
+SUSPEND_SIGNALS = False # Custom signal wrapper
+
 AUTH_USER_MODEL = 'core.User'
 
 # Application definition
