@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'anymail',
     'core',
     'user',
+    'album'
 ]
 
 # Rest_framework settings

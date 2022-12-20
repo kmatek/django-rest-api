@@ -32,6 +32,7 @@ urlpatterns = [
          TokenRefreshView.as_view(),
          name='token_refresh'),
     path('api/user/', include('user.urls')),
+    path('api/albums/', include('album.urls')),
 ]
 
 if settings.DEBUG:
