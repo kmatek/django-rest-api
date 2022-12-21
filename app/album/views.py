@@ -6,7 +6,11 @@ from rest_framework.decorators import action
 from django.utils.translation import gettext_lazy as _
 
 from .permissions import IsOwnerOrReadOnly
-from .serializers import AlbumSerializer, AlbumDetailSerializer
+from .serializers import (
+    AlbumSerializer,
+    AlbumDetailSerializer,
+    AlbumPhotoSerializer
+)
 
 from core.models import Album, AlbumLike
 
@@ -35,6 +39,8 @@ class AlbumAPIViewSet(viewsets.ModelViewSet):
         """Change serializer class according to action."""
         if self.action in ('retrieve', 'update', 'partial_update'):
             self.serializer_class = AlbumDetailSerializer
+        if self.action in ('upload_photo',):
+            self.serializer_class = AlbumPhotoSerializer
         return self.serializer_class
 
     @action(detail=True, methods=['post', 'delete'],
@@ -57,3 +63,11 @@ class AlbumAPIViewSet(viewsets.ModelViewSet):
         # Liked/disliked handling.
         msg = _('Already liked or disliked.')
         return Response({'detail': msg}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'],
+            url_path='upload-photo', name='upload-photo')
+    def upload_photo(self, request, pk=None):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)

@@ -12,4 +12,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
             return True
         if view.action == 'like_album':
             return True
-        return obj.owner == request.user
+        try:
+            return obj.owner == request.user
+        except AttributeError:
+            return obj.album.owner == request.user

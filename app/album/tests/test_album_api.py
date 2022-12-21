@@ -1,10 +1,20 @@
+import tempfile
+import shutil
+import os
+
+from PIL import Image
+
 from rest_framework.test import APITestCase
 from rest_framework import status
 
 from django.test import override_settings
 from django.urls import reverse
 
-from core.tests.test_models import sample_user, sample_album
+from core.tests.test_models import (
+    sample_user,
+    sample_album,
+    sample_album_photo
+)
 from core.models import Album
 from album.serializers import AlbumSerializer, AlbumDetailSerializer
 
@@ -17,6 +27,10 @@ def get_detail_album_url(pk):
 
 def like_album_url(pk):
     return reverse('album:album-like-album', args=[pk])
+
+
+def upload_photo_url(pk):
+    return reverse('album:album-upload-photo', args=[pk])
 
 
 @override_settings(
@@ -36,6 +50,11 @@ class AlbumViewSetTests(APITestCase):
             email='test@email.com', name='testname',
             password='TestPassword!123')
         self.album = sample_album(owner=self.user, title='images_album')
+
+    def tearDown(self):
+        path = '/vol/web/media/uploads/albums/test@email.com'
+        if os.path.exists(path):
+            shutil.rmtree(path)
 
     def test_retrieve_album_list(self):
         sample_album(owner=self.user, title='testalbum')
@@ -223,3 +242,118 @@ class AlbumViewSetTests(APITestCase):
         # Try dislike already disliked.
         res = self.client.delete(like_album_url(self.album.pk))
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_upload_photos_authenticated(self):
+        self.client.force_authenticate(user=self.user)
+        url = upload_photo_url(self.album.pk)
+
+        with tempfile.NamedTemporaryFile(suffix='.png') as image_file:
+            img = Image.new('RGB', (200, 200))
+            img.save(image_file, 'png')
+            image_file.seek(0)
+            res = self.client.post(
+                url, {'image': image_file}, format='multipart')
+
+        self.album.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(self.album.images.count(), 1)
+
+    def test_upload_photos_unauthenticated(self):
+        url = upload_photo_url(self.album.pk)
+
+        with tempfile.NamedTemporaryFile(suffix='.png') as image_file:
+            img = Image.new('RGB', (200, 200))
+            img.save(image_file, 'png')
+            image_file.seek(0)
+            res = self.client.post(
+                url, {'image': image_file}, format='multipart')
+
+        self.album.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(self.album.images.count(), 0)
+
+    def test_upload_photo(self):
+        self.client.force_authenticate(user=self.user)
+        url = upload_photo_url(self.album.pk)
+
+        with tempfile.NamedTemporaryFile(suffix='.png') as image_file:
+            img = Image.new('RGB', (200, 200))
+            img.save(image_file, 'png')
+            image_file.seek(0)
+            res = self.client.post(
+                url, {'image': image_file}, format='multipart')
+
+        self.album.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(self.album.images.count(), 1)
+
+    def test_upload_image_bigger_than_1MB(self):
+        self.client.force_authenticate(user=self.user)
+        url = upload_photo_url(self.album.pk)
+
+        with tempfile.NamedTemporaryFile(suffix='.png') as image_file:
+            img = Image.new('RGB', (200, 200))
+            img.save(image_file, 'png')
+            image_file.seek(1024*1024 + 1)
+            payload = {'image': image_file}
+            res = self.client.post(
+                url, payload, format='multipart')
+
+        self.album.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.album.images.count(), 0)
+
+    def test_upload_image_gif_ext(self):
+        self.client.force_authenticate(user=self.user)
+        url = upload_photo_url(self.album.pk)
+
+        with tempfile.NamedTemporaryFile(suffix='.gif') as image_file:
+            img = Image.new('RGB', (200, 200))
+            img.save(image_file, 'gif')
+            image_file.seek(1024*1024 + 1)
+            payload = {'image': image_file}
+            res = self.client.post(
+                url, payload, format='multipart')
+
+        self.album.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.album.images.count(), 0)
+
+    def test_upload_image_not_allowed_methods(self):
+        self.client.force_authenticate(user=self.user)
+        url = upload_photo_url(self.album.pk)
+
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        res = self.client.patch(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        res = self.client.put(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        res = self.client.delete(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_upload_image_with_available_space(self):
+        self.client.force_authenticate(user=self.user)
+        url = upload_photo_url(self.album.pk)
+
+        for _ in range(10):
+            image_file = tempfile.NamedTemporaryFile(suffix='.png').name
+            sample_album_photo(album=self.album, image=image_file)
+
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.images.count(), 10)
+
+        image_file = tempfile.NamedTemporaryFile(suffix='.png')
+        img = Image.new('RGB', (200, 200))
+        img.save(image_file, 'png')
+        image_file.seek(0)
+
+        res = self.client.post(
+            url, {'image': image_file}, format='multipart')
+
+        self.album.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.album.images.count(), 10)
