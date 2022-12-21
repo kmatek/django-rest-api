@@ -15,6 +15,10 @@ def get_detail_album_url(pk):
     return reverse('album:album-detail', args=[pk])
 
 
+def like_album_url(pk):
+    return reverse('album:album-like-album', args=[pk])
+
+
 @override_settings(
     SUSPEND_SIGNALS=True,
     CACHES={
@@ -162,3 +166,60 @@ class AlbumViewSetTests(APITestCase):
         self.assertIn('count', res.data)
         self.assertFalse(res.data['next'])
         self.assertTrue(res.data['previous'])
+
+    def test_like_an_album_unauthenticated(self):
+        res = self.client.post(like_album_url(self.album.pk))
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_like_an_album(self):
+        self.client.force_authenticate(self.user)
+        self.assertEqual(self.album.likes.count(), 0)
+        # Create like.
+        res = self.client.post(like_album_url(self.album.pk))
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.likes.count(), 1)
+        # Try create like while already liked.
+        res = self.client.post(like_album_url(self.album.pk))
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.likes.count(), 1)
+
+    def test_like_other_users_albums(self):
+        self.client.force_authenticate(self.user)
+        album2 = sample_album(
+            title='test2', owner=sample_user(
+                email='test2@email.com', name='testname2',
+                password='Testpassword123!'))
+        self.assertEqual(album2.likes.count(), 0)
+        # Create like.
+        res = self.client.post(like_album_url(album2.pk))
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        album2.refresh_from_db()
+        self.assertEqual(album2.likes.count(), 1)
+        # Try create like already liked.
+        res = self.client.post(like_album_url(album2.pk))
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        album2.refresh_from_db()
+        self.assertEqual(album2.likes.count(), 1)
+
+    def test_dislike_an_album_unauthenticated(self):
+        res = self.client.delete(like_album_url(self.album.pk))
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_dislike_an_album(self):
+        self.client.force_authenticate(self.user)
+        self.assertEqual(self.album.likes.count(), 0)
+        # Create like.
+        res = self.client.post(like_album_url(self.album.pk))
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.likes.count(), 1)
+        # Dislike.
+        res = self.client.delete(like_album_url(self.album.pk))
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.likes.count(), 0)
+        # Try dislike already disliked.
+        res = self.client.delete(like_album_url(self.album.pk))
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)

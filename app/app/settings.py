@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    'django_cleanup.apps.CleanupConfig',
     'rest_framework',
     'rest_framework_simplejwt',
     'anymail',
