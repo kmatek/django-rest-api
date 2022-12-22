@@ -33,6 +33,10 @@ def upload_photo_url(pk):
     return reverse('album:album-upload-photo', args=[pk])
 
 
+def delete_photo_url(pk, photo_pk):
+    return reverse('album:album-delete-photo', args=[pk, photo_pk])
+
+
 @override_settings(
     SUSPEND_SIGNALS=True,
     CACHES={
@@ -287,7 +291,7 @@ class AlbumViewSetTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(self.album.images.count(), 1)
 
-    def test_upload_image_bigger_than_1MB(self):
+    def test_upload_photo_bigger_than_1MB(self):
         self.client.force_authenticate(user=self.user)
         url = upload_photo_url(self.album.pk)
 
@@ -303,7 +307,7 @@ class AlbumViewSetTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(self.album.images.count(), 0)
 
-    def test_upload_image_gif_ext(self):
+    def test_upload_photo_gif_ext(self):
         self.client.force_authenticate(user=self.user)
         url = upload_photo_url(self.album.pk)
 
@@ -319,7 +323,7 @@ class AlbumViewSetTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(self.album.images.count(), 0)
 
-    def test_upload_image_not_allowed_methods(self):
+    def test_upload_photo_not_allowed_methods(self):
         self.client.force_authenticate(user=self.user)
         url = upload_photo_url(self.album.pk)
 
@@ -335,7 +339,7 @@ class AlbumViewSetTests(APITestCase):
         res = self.client.delete(url)
         self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    def test_upload_image_with_available_space(self):
+    def test_upload_photo_with_available_space(self):
         self.client.force_authenticate(user=self.user)
         url = upload_photo_url(self.album.pk)
 
@@ -357,3 +361,82 @@ class AlbumViewSetTests(APITestCase):
         self.album.refresh_from_db()
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(self.album.images.count(), 10)
+
+    def test_delete_photo_is_owner(self):
+        self.client.force_authenticate(user=self.user)
+
+        with tempfile.NamedTemporaryFile(suffix='.png') as image_file:
+            album_photo = sample_album_photo(
+                album=self.album, image=image_file.name)
+
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.images.count(), 1)
+
+        url = delete_photo_url(self.album.pk, album_photo.pk)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.images.count(), 0)
+
+    def test_delete_photo_is_not_owner(self):
+        user2 = sample_user(
+            email='test2@email.com', name='test2name',
+            password='Testpassword!123')
+
+        self.client.force_authenticate(user=user2)
+
+        with tempfile.NamedTemporaryFile(suffix='.png') as image_file:
+            album_photo = sample_album_photo(
+                album=self.album, image=image_file.name)
+
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.images.count(), 1)
+
+        url = delete_photo_url(self.album.pk, album_photo.pk)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.images.count(), 1)
+
+    def test_delete_photo_unauthorized(self):
+        with tempfile.NamedTemporaryFile(suffix='.png') as image_file:
+            album_photo = sample_album_photo(
+                album=self.album, image=image_file.name)
+
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.images.count(), 1)
+
+        url = delete_photo_url(self.album.pk, album_photo.pk)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.images.count(), 1)
+
+    def test_delete_photo_not_allowed_methods(self):
+        self.client.force_authenticate(user=self.user)
+
+        with tempfile.NamedTemporaryFile(suffix='.png') as image_file:
+            album_photo = sample_album_photo(
+                album=self.album, image=image_file.name)
+
+        self.album.refresh_from_db()
+        self.assertEqual(self.album.images.count(), 1)
+
+        url = delete_photo_url(self.album.pk, album_photo.pk)
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        url = delete_photo_url(self.album.pk, album_photo.pk)
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        url = delete_photo_url(self.album.pk, album_photo.pk)
+        res = self.client.put(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        url = delete_photo_url(self.album.pk, album_photo.pk)
+        res = self.client.patch(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)

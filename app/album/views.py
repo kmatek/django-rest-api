@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from django.utils.translation import gettext_lazy as _
+from django.shortcuts import get_object_or_404
 
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (
@@ -12,7 +13,7 @@ from .serializers import (
     AlbumPhotoSerializer
 )
 
-from core.models import Album, AlbumLike
+from core.models import Album, AlbumLike, AlbumPhoto
 
 
 class CustomPaginator(PageNumberPagination):
@@ -39,7 +40,7 @@ class AlbumAPIViewSet(viewsets.ModelViewSet):
         """Change serializer class according to action."""
         if self.action in ('retrieve', 'update', 'partial_update'):
             self.serializer_class = AlbumDetailSerializer
-        if self.action in ('upload_photo',):
+        if self.action == 'upload_photo':
             self.serializer_class = AlbumPhotoSerializer
         return self.serializer_class
 
@@ -67,7 +68,19 @@ class AlbumAPIViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'],
             url_path='upload-photo', name='upload-photo')
     def upload_photo(self, request, pk=None):
+        """Upload photo to an album action."""
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['delete'], name='delete-photo',
+            url_path='delete-photo/(?P<photo_pk>\w+)',) # noqa
+    def delete_photo(self, request, pk=None, photo_pk=None):
+        """Delete photo from an album action."""
+        image = get_object_or_404(AlbumPhoto, pk=photo_pk)
+        if image.album == self.get_object():
+            image.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        msg = _('Wrong album.')
+        return Response({'detail': msg}, status=status.HTTP_400_BAD_REQUEST)

@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.translation import gettext as _
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import User, Album, AlbumLike
+from .models import User, Album, AlbumLike, AlbumPhoto
 
 from pyheif_pillow_opener import register_heif_opener
 
@@ -35,3 +35,4 @@ class UserAdmin(BaseUserAdmin):
 admin.site.register(User, UserAdmin)
 admin.site.register(Album)
 admin.site.register(AlbumLike)
+admin.site.register(AlbumPhoto)
