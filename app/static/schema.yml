@@ -1,0 +1,796 @@
+openapi: 3.0.2
+info:
+  title: Album Project API
+  description: |-
+    Hey there!
+
+    Here you can try how mine api works!
+
+    [Git repository](https://github.com/mateuszklusowski/albumrestproject)
+
+    [Home](http://127.0.0.1:8000/)
+
+    [Obtain bearer token](http://127.0.0.1:8000/api/token/)
+  version: '0.0.1'
+paths:
+  /api/user/me/:
+    get:
+      security:
+            - BearerAuth: []
+      operationId: retrieveUserDetail
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+          description: ''
+      tags:
+      - User
+  /api/user/activate/{uidb64}/{token}/:
+    get:
+      operationId: retrieveActivateUser
+      description: ''
+      parameters:
+      - name: uidb64
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: token
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    default: 'User activated.'
+          description: ''
+      tags:
+      - User
+  /api/albums/:
+    get:
+      operationId: listAlbums
+      description: ''
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?page=4
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?page=2
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Album'
+          description: ''
+      tags:
+      - Albums
+    post:
+      security:
+            - BearerAuth: []
+      operationId: createAlbum
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Album'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Album'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Album'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Album'
+          description: ''
+      tags:
+      - Albums
+  /api/albums/{id}/:
+    get:
+      operationId: retrieveAlbum
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: A unique integer value identifying this album.
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumDetail'
+          description: ''
+      tags:
+      - Albums
+    put:
+      security:
+            - BearerAuth: []
+      operationId: updateAlbum
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: A unique integer value identifying this album.
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlbumDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlbumDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlbumDetail'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumDetail'
+          description: ''
+      tags:
+      - Albums
+    patch:
+      security:
+            - BearerAuth: []
+      operationId: partialUpdateAlbum
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: A unique integer value identifying this album.
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlbumDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlbumDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlbumDetail'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumDetail'
+          description: ''
+      tags:
+      - Albums
+    delete:
+      security:
+            - BearerAuth: []
+      operationId: destroyAlbum
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: A unique integer value identifying this album.
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+      - Albums
+  /api/token/:
+    post:
+      operationId: createTokenObtainPair
+      description: 'Takes a set of user credentials and returns an access and refresh
+        JSON web
+
+        token pair to prove the authentication of those credentials.'
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refresh:
+                    type: string
+                  access:
+                    type: string
+          description: ''
+      tags:
+      - Token
+  /api/token/refresh/:
+    post:
+      operationId: createTokenRefresh
+      description: 'Takes a refresh type JSON web token and returns an access type
+        JSON web
+
+        token if the refresh token is valid.'
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+      tags:
+      - Token
+  /api/user/create/:
+    post:
+      operationId: createUser
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreate'
+          description: ''
+      tags:
+      - User
+  /api/user/reset-password/:
+    post:
+      operationId: createPasswordResetRequest
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    default: 'We have sent you an email.'
+          description: ''
+      tags:
+      - User
+  /api/user/reset-password-confirm/:
+    post:
+      operationId: createPasswordResetConfirm
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    default: 'Password changed successfuly.'
+          description: ''
+      tags:
+      - User
+  /api/albums/{id}/like/:
+    post:
+      security:
+            - BearerAuth: []
+      operationId: likeAlbumAlbum
+      description: Like/dislike an album action.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: A unique integer value identifying this album.
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Album'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Album'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Album'
+      responses:
+        '201':
+          description: ''
+      tags:
+      - Albums
+    delete:
+      security:
+            - BearerAuth: []
+      operationId: likeAlbumAlbum
+      description: Like/dislike an album action.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: A unique integer value identifying this album.
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+      - Albums
+  /api/albums/{id}/upload-photo/:
+    post:
+      security:
+            - BearerAuth: []
+      operationId: uploadPhotoAlbum
+      description: Upload photo to an album action.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: A unique integer value identifying this album.
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlbumPhoto'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlbumPhoto'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  image:
+                    type: string
+          description: ''
+      tags:
+      - Albums
+  /api/user/me/upload-image/:
+    put:
+      security:
+            - BearerAuth: []
+      operationId: updateUserImage
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserImage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserImage'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserImage'
+          description: ''
+      tags:
+      - User
+    patch:
+      security:
+            - BearerAuth: []
+      operationId: partialUpdateUserImage
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserImage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserImage'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserImage'
+          description: ''
+      tags:
+      - User
+  /api/user/change-password/:
+    put:
+      security:
+            - BearerAuth: []
+      operationId: updateUserPasswordChange
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPasswordChange'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserPasswordChange'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserPasswordChange'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPasswordChange'
+          description: ''
+      tags:
+      - User
+    patch:
+      security:
+            - BearerAuth: []
+      operationId: partialUpdateUserPasswordChange
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPasswordChange'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserPasswordChange'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserPasswordChange'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPasswordChange'
+          description: ''
+      tags:
+      - User
+  /api/albums/{id}/delete-photo/{photo_pk}/:
+    delete:
+      security:
+            - BearerAuth: []
+      operationId: deletePhotoAlbum
+      description: Delete photo from an album action.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: A unique integer value identifying this album.
+        schema:
+          type: string
+      - name: photo_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+      - Albums
+components:
+  schemas:
+    UserDetail:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        name:
+          type: string
+          maxLength: 30
+          minLength: 5
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+          minLength: 8
+        is_active:
+          type: boolean
+          readOnly: true
+        image:
+          type: string
+          format: binary
+          nullable: true
+      required:
+      - email
+      - name
+      - password
+    Album:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        owner:
+          type: string
+          readOnly: true
+        likes:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        created_date:
+          type: string
+          format: date
+          readOnly: true
+      required:
+      - title
+    AlbumDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        owner:
+          type: string
+          readOnly: true
+        likes:
+          type: integer
+          readOnly: true
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                readOnly: true
+              image:
+                type: string
+                format: binary
+            required:
+            - image
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        created_date:
+          type: string
+          format: date
+          readOnly: true
+      required:
+      - title
+    TokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - password
+    TokenRefresh:
+      type: object
+      properties:
+        refresh:
+          type: string
+        access:
+          type: string
+          readOnly: true
+      required:
+      - refresh
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        name:
+          type: string
+          maxLength: 30
+          minLength: 5
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+          minLength: 8
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - email
+      - name
+      - password
+    UserCreate:
+      type: object
+      properties:
+        detail:
+          type: string
+          default: 'Please check your mailbox to activate your account.'
+    PasswordResetRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          writeOnly: true
+      required:
+      - email
+    PasswordResetConfirm:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+        user_id:
+          type: string
+          writeOnly: true
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - token
+      - user_id
+      - new_password
+    AlbumPhoto:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        image:
+          type: file
+          format: uri
+      required:
+      - image
+    UserImage:
+      type: object
+      properties:
+        image:
+          type: string
+          format: binary
+      required:
+      - image
+    UserPasswordChange:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          minLength: 5
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+          minLength: 8
+        is_active:
+          type: boolean
+          readOnly: true
+        image:
+          type: string
+          format: binary
+          readOnly: true
+          nullable: true
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - password
+      - new_password
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
