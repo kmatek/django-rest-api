@@ -181,7 +181,7 @@ TIME_ZONE = 'Europe/Berlin'
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False # just for a while
 
 
 # Static files (CSS, JavaScript, Images)

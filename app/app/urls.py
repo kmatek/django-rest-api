@@ -37,6 +37,9 @@ urlpatterns = [
     path('docs/',
          TemplateView.as_view(template_name='swagger.html'),
          name='documentation'),
+    path('',
+         TemplateView.as_view(template_name='index.html'),
+         name='main-page')
 ]
 
 if settings.DEBUG:
