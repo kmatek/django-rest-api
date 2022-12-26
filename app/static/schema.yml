@@ -18,7 +18,7 @@ paths:
       security:
             - BearerAuth: []
       operationId: retrieveUserDetail
-      description: ''
+      summary: Get user details
       parameters: []
       responses:
         '200':
@@ -33,6 +33,7 @@ paths:
     get:
       operationId: retrieveActivateUser
       description: ''
+      summary: Activate user
       parameters:
       - name: uidb64
         in: path
@@ -63,6 +64,7 @@ paths:
     get:
       operationId: listAlbums
       description: ''
+      summary: Get list of albums
       parameters:
       - name: page
         required: false
@@ -108,6 +110,7 @@ paths:
             - BearerAuth: []
       operationId: createAlbum
       description: ''
+      summary: Create an album
       parameters: []
       requestBody:
         content:
@@ -133,6 +136,7 @@ paths:
     get:
       operationId: retrieveAlbum
       description: ''
+      summary: Get an album details
       parameters:
       - name: id
         in: path
@@ -154,6 +158,7 @@ paths:
             - BearerAuth: []
       operationId: updateAlbum
       description: ''
+      summary: Make changes in an album
       parameters:
       - name: id
         in: path
@@ -186,6 +191,7 @@ paths:
             - BearerAuth: []
       operationId: partialUpdateAlbum
       description: ''
+      summary: Make changes in an album
       parameters:
       - name: id
         in: path
@@ -218,6 +224,7 @@ paths:
             - BearerAuth: []
       operationId: destroyAlbum
       description: ''
+      summary: Delete an album
       parameters:
       - name: id
         in: path
@@ -233,6 +240,7 @@ paths:
   /api/token/:
     post:
       operationId: createTokenObtainPair
+      summary: Obtain a token
       description: 'Takes a set of user credentials and returns an access and refresh
         JSON web
 
@@ -266,6 +274,7 @@ paths:
   /api/token/refresh/:
     post:
       operationId: createTokenRefresh
+      summary: Refresh a token
       description: 'Takes a refresh type JSON web token and returns an access type
         JSON web
 
@@ -295,6 +304,7 @@ paths:
     post:
       operationId: createUser
       description: ''
+      summary: Create a new user
       parameters: []
       requestBody:
         content:
@@ -320,6 +330,7 @@ paths:
     post:
       operationId: createPasswordResetRequest
       description: ''
+      summary: Reset the user's password
       parameters: []
       requestBody:
         content:
@@ -349,6 +360,7 @@ paths:
     post:
       operationId: createPasswordResetConfirm
       description: ''
+      summary: Reset user's password confirmation
       parameters: []
       requestBody:
         content:
@@ -380,6 +392,7 @@ paths:
             - BearerAuth: []
       operationId: likeAlbumAlbum
       description: Like/dislike an album action.
+      summary: Like an album
       parameters:
       - name: id
         in: path
@@ -408,6 +421,7 @@ paths:
             - BearerAuth: []
       operationId: likeAlbumAlbum
       description: Like/dislike an album action.
+      summary: Dislike an album
       parameters:
       - name: id
         in: path
@@ -426,6 +440,7 @@ paths:
             - BearerAuth: []
       operationId: uploadPhotoAlbum
       description: Upload photo to an album action.
+      summary: Upload an image to an album
       parameters:
       - name: id
         in: path
@@ -461,6 +476,7 @@ paths:
             - BearerAuth: []
       operationId: updateUserImage
       description: ''
+      summary: Change user's image
       parameters: []
       requestBody:
         content:
@@ -484,6 +500,7 @@ paths:
             - BearerAuth: []
       operationId: partialUpdateUserImage
       description: ''
+      summary: Change user's image
       parameters: []
       requestBody:
         content:
@@ -508,6 +525,7 @@ paths:
             - BearerAuth: []
       operationId: updateUserPasswordChange
       description: ''
+      summary: Change the user's password
       parameters: []
       requestBody:
         content:
@@ -534,6 +552,7 @@ paths:
             - BearerAuth: []
       operationId: partialUpdateUserPasswordChange
       description: ''
+      summary: Change the user's password
       parameters: []
       requestBody:
         content:
@@ -561,6 +580,7 @@ paths:
             - BearerAuth: []
       operationId: deletePhotoAlbum
       description: Delete photo from an album action.
+      summary: Delete image from an album
       parameters:
       - name: id
         in: path
