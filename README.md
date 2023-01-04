@@ -1,18 +1,13 @@
 # Album Project
+A digital album REST API is a project that involves creating a server-side application programming interface (API) that enables clients to interact with a digital album stored on a server. 
 
-My name is Mateusz. I am a self-taught programmer who started learning out of curiosity. 
-I would like to work with experienced engineers to learn best practices and develop my skills.
+The API allows clients to retrieve information about the album, such as its title and images list, as well as perform actions on the album, such as adding or removing images. 
 
-
-The project serves as a digital album to store our photos. A user can have only 3 albums and 10 photos in each.
-As this is a portfolio project, the size of the images is limited to 1MB.
-
+The API follows the REST architectural style. 
 
 To make full use of the application, you need to [create an account](https://) and [obtain an access token](https://).
 
-
 The [Documentation](https://) allows you to test the endpoints, but you can also do this using a browser.
-
 
 To try it in the [browser](https://), you will need the google Modheader extension to add the token to your headers.
 
