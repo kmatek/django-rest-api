@@ -5,11 +5,11 @@ The API allows clients to retrieve information about the album, such as its titl
 
 The API follows the REST architectural style. 
 
-To make full use of the application, you need to [create an account](https://) and [obtain an access token](https://).
+To make full use of the application, you need to create an account and obtain an access token.
 
-The [Documentation](https://) allows you to test the endpoints, but you can also do this using a browser.
+The Documentation allows you to test the endpoints, but you can also do this using a browser.
 
-To try it in the [browser](https://), you will need the google Modheader extension to add the token to your headers.
+To try it in the browser, you will need the google Modheader extension to add the token to your headers.
 
 example: header name: `Authorization`, value: Bearer `your code`
 
