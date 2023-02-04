@@ -14,64 +14,79 @@ services:
              python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
     environment:
-      - SECRET_KEY=${SECRET_KEY}
-      - DEBUG=${DEBUG}
-      - DB_HOST=${DB_HOST}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
-      - CACHE_LOCATION=${CACHE_LOCATION}
-      - EMAIL_KEY=${EMAIL_KEY}
-      - EMAIL_BACKEND=${EMAIL_BACKEND}
-      - EMAIL=${EMAIL}
+      - SECRET_KEY=secret_key
+      - DEBUG=1
+      - DB_HOST=db
+      - DB_NAME=test_db
+      - DB_USER=test_db_user
+      - DB_PASSWORD=test_db_password
+      - CELERY_BROKER_URL=redis://:redispass@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:redispass@redis:6379/1
+      - CACHE_LOCATION=redis://:redispass@redis:6379/2
     depends_on:
-      - db
-  
+      redis:
+        condition: service_healthy
+
   db:
     image: postgres:14.5-alpine
     restart: always
     volumes:
       - dev-db-data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=test_db
+      - POSTGRES_USER=test_db_user
+      - POSTGRES_PASSWORD=test_db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d test_db -U test_db_user"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7.0.4-alpine
     restart: always
     ports:
       - "6379:6379"
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass redispass
     volumes:
       - dev-redis-data:/var/lib/redis/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 2s
+      timeout: 10s
+      retries: 5
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
+  mailhog:
+    image: mailhog/mailhog
+    ports: 
+      - 1025:1025
+      - 8025:8025 
+    depends_on:
+      db:
+        condition: service_healthy
 
   celery:
     build:
       context: .
     command: >
-      sh -c "celery -A app worker --loglevel=info"
+      sh -c "sleep 5 &&
+             celery -A app worker --loglevel=info"
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DEBUG=${DEBUG}
-      - SECRET_KEY=${SECRET_KEY}
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
-      - CACHE_LOCATION=${CACHE_LOCATION}
-      - EMAIL_KEY=${EMAIL_KEY}
-      - EMAIL_BACKEND=${EMAIL_BACKEND}
-      - EMAIL=${EMAIL}
+      - SECRET_KEY=secret_key
+      - DEBUG=1
+      - DB_HOST=db
+      - DB_NAME=test_db
+      - DB_USER=test_db_user
+      - DB_PASSWORD=test_db_password
+      - CELERY_BROKER_URL=redis://:redispass@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:redispass@redis:6379/1
+      - CACHE_LOCATION=redis://:redispass@redis:6379/2
     volumes:
        - ./app:/app
     depends_on:
-      - redis
       - app
 
 volumes:

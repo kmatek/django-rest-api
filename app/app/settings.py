@@ -50,7 +50,6 @@ INSTALLED_APPS = [
     'django_cleanup.apps.CleanupConfig',
     'rest_framework',
     'rest_framework_simplejwt',
-    'anymail',
     'core',
     'user',
     'album'
@@ -163,14 +162,10 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Email settings
-
-ANYMAIL = {
-    "SENDINBLUE_API_KEY": os.environ.get('EMAIL_KEY')
-}
-EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND')
-DEFAULT_FROM_EMAIL = os.environ.get('EMAIL')
-SERVER_EMAIL = os.environ.get('EMAIL')
-
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'mailhog'
+EMAIL_PORT = '1025'
+DEFAULT_FROM_EMAIL = 'from@example.com'
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/

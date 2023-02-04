@@ -1,9 +1,11 @@
 from celery import shared_task
 
-from anymail.message import AnymailMessage
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 @shared_task
 def send_email(email_subject: str, email_body: str, to_whom: str):
-    return AnymailMessage(
-        subject=email_subject, body=email_body, to=[to_whom]).send()
+    return send_mail(
+        subject=email_subject, message=email_body,
+        from_email=settings.DEFAULT_FROM_EMAIL, recipient_list=[to_whom])

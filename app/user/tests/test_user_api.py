@@ -245,7 +245,7 @@ class PublicUserAPITests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
     @override_settings(
-        EMAIL_BACKEND='anymail.backends.test.EmailBackend',
+        EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
         CELERY_TASK_ALWAYS_EAGER=True,
         CELERY_TASK_EAGER_PROPAGATES=True
     )
@@ -702,7 +702,7 @@ TESTING_THRESHOLD = '5/min'
 
 @override_settings(
     SUSPEND_SIGNALS=True,
-    EMAIL_BACKEND='anymail.backends.test.EmailBackend',
+    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
     CELERY_TASK_ALWAYS_EAGER=True,
     CELERY_TASK_EAGER_PROPAGATES=True,
     THROTTLE_THRESHOLD=TESTING_THRESHOLD,

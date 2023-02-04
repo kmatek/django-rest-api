@@ -15,12 +15,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Create env file
-        env:
-          SECRETS: ${{secrets.TESTS_SECRETS}}
-        run: |
-          printf ${{env.SECRETS}} >> app/.env
       - name: Test
-        run: docker-compose --env-file app/.env run --rm app sh -c "python manage.py wait_for_db && sleep 5 && python manage.py test"
+        run: docker-compose run --rm app sh -c "python manage.py wait_for_db && sleep 5 && python manage.py test"
       - name: Lint
-        run: docker-compose --env-file app/.env run --rm app sh -c "flake8"
+        run: docker-compose run --rm app sh -c "flake8"
