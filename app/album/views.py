@@ -24,7 +24,7 @@ class CustomPaginator(PageNumberPagination):
 
 
 class AlbumAPIViewSet(viewsets.ModelViewSet):
-    queryset = Album.objects.all().order_by('-id')
+    queryset = Album.objects.select_related('owner').order_by('-id')
     serializer_class = AlbumSerializer
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
@@ -49,8 +49,9 @@ class AlbumAPIViewSet(viewsets.ModelViewSet):
     def like_album(self, request, pk=None):
         """Like/dislike an album action."""
         try:
-            like = AlbumLike.objects.get(
-                album=self.get_object(), user_liked=request.user)
+            logged_user_likes = request.user.albumlike_set.\
+                select_related('album').select_related('user_liked')
+            like = logged_user_likes.get(album=pk)
             # Dislike an album.
             if request.method == 'DELETE':
                 like.delete()
