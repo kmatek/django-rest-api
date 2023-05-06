@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from django.utils.translation import gettext_lazy as _
+from django.conf import settings
 
 from core.models import Album, AlbumPhoto
 from core.utils import is_image_gif_ext, image_size_validator
@@ -19,8 +20,8 @@ class AlbumSerializer(serializers.ModelSerializer):
         """Check that user has no more than 3 albums."""
         user = self.context.get('request').user
         number_of_albums = user.album_set.count()
-        if number_of_albums == 3:
-            msg = _('There are only available 3 albums.')
+        if number_of_albums == settings.ALBUM_LIMIT:
+            msg = _(f'There are only available {settings.ALBUM_LIMIT} albums.')
             raise serializers.ValidationError({'album': msg})
         return data
 
@@ -39,9 +40,9 @@ class AlbumPhotoSerializer(serializers.HyperlinkedModelSerializer):
     def validate(self, data):
         """Check that album does not have no more that 10 photos."""
         album = self.context.get('view').get_object()
-        number_of_photos = 10 - album.images.count()
+        number_of_photos = settings.ALBUM_PHOTOS_LIMIT - album.images.count()
         if not number_of_photos:
-            msg = _("Ensure that an album has no more than 10 elements.")
+            msg = _(f"Ensure that an album has no more than {settings.ALBUM_PHOTOS_LIMIT} elements.")
             raise serializers.ValidationError({'image': msg})
         return {'album': album, 'image': data.get('image')}
 

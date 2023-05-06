@@ -207,3 +207,7 @@ STATIC_ROOT = 'vol/web/static'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Album limits
+ALBUM_LIMIT = 3
+ALBUM_PHOTOS_LIMIT = 10

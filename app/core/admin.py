@@ -4,11 +4,6 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from .models import User, Album, AlbumLike, AlbumPhoto
 
-from pyheif_pillow_opener import register_heif_opener
-
-# Register image heif extension.
-register_heif_opener()
-
 
 class UserAdmin(BaseUserAdmin):
     ordering = ('id',)
