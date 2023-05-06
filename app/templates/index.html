@@ -46,8 +46,7 @@
                 A digital album REST API is a project that involves creating a server-side application programming interface (API) that enables clients to interact with a digital album stored on a server. The API allows clients to retrieve information about the album, such as its title and images list, as well as perform actions on the album, such as adding or removing images. The API follows the REST architectural style.<br><br>
                 To make full use of the application, you need to create an <a href="{% url 'user:create-user' %}">account</a> and obtain an<a href="{% url 'token_obtain_pair' %}"> access token</a>.<br><br>
                 The <a href="{% url 'documentation' %}">Documentation</a> allows you to test the endpoints, but you can also do this using a browser.<br>
-                To try it in the browser, you will need the google Modheader extension to add the token to your headers.<br>
-                example: header name: <code>Authorization </code>-- value: Bearer <code> your code</code>
+                Request header: <code>Authorization:&nbsp;</code>Bearer&nbsp;&nbsp;<code>&lt;access_token&gt;</code>
             </article>
         </div>
     </div>
