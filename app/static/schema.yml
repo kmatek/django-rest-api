@@ -450,9 +450,6 @@ paths:
           type: string
       requestBody:
         content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/AlbumPhoto'
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/AlbumPhoto'

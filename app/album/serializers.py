@@ -42,7 +42,7 @@ class AlbumPhotoSerializer(serializers.HyperlinkedModelSerializer):
         album = self.context.get('view').get_object()
         number_of_photos = settings.ALBUM_PHOTOS_LIMIT - album.images.count()
         if not number_of_photos:
-            msg = _(f"Ensure that an album has no more than {settings.ALBUM_PHOTOS_LIMIT} elements.")
+            msg = _(f"Ensure that an album has no more than {settings.ALBUM_PHOTOS_LIMIT} elements.") # noqa
             raise serializers.ValidationError({'image': msg})
         return {'album': album, 'image': data.get('image')}
 
